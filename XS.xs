@@ -96,3 +96,11 @@ items_in_rect(self, ...)
     Safefree(coords);
   OUTPUT: RETVAL
 
+void
+DESTROY(self)
+    xs_bucket_t* self
+  PREINIT:
+  PPCODE:
+    Safefree(self);
+    XSRETURN_EMPTY;
+
