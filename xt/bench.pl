@@ -27,6 +27,7 @@ isa_ok($strategy, 'Algorithm::SpatialIndex::Strategy::QuadTree');
 is($strategy->no_of_subnodes, 4, 'QuadTree has four subnodes');
 is_deeply([$strategy->coord_types], [qw(double double double double double double)], 'QuadTree has six coordinates');
 
+#my $scale = 1;
 my $scale = 70;
 my $item_id = 0;
 foreach my $x (map {$_/$scale} $limits[0]*$scale..$limits[2]*$scale) {
@@ -41,7 +42,7 @@ printf "Filling took %.3f\n", time()-$start;
 my $time = time;
 my $n = 500;
 for my $i (1..$n) {
-  my @items = $index->get_items_in_rect(qw( 13 0 13.1 0.1 ));
+  my @items = $index->get_items_in_rect(qw( 13 0 13.2 0.2 ));
   warn scalar(@items) if $i == 1;
 }
 printf "Each get took: %.3f ms\n", (time()-$time)/$n*1000;
