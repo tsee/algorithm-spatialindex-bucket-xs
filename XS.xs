@@ -7,7 +7,7 @@
 #include "ppport.h"
 
 typedef struct {
-  SV* payload;
+  IV id;
   double* coords;
 } xs_item_t;
 
@@ -21,7 +21,7 @@ typedef struct {
 #define ASI_MAKE_ITEM_AV(item_av, itemptr, ndims) \
       item_av = newAV(); \
       av_fill(item_av, ndims); /* 1 (for payload) + ndims-1*/ \
-      av_store(item_av, 0, newSVsv(itemptr->payload)); \
+      av_store(item_av, 0, newSViv(itemptr->id)); \
       for (j = 0; j < ndims; ++j) { \
         av_store(item_av, j+1, newSVnv(itemptr->coords[j])); \
       }
@@ -29,7 +29,7 @@ typedef struct {
 
 #define ASI_MAKE_ITEM(itemptr, item_av, ndim) \
         STMT_START { \
-          itemptr->payload = newSVsv(*av_fetch(item_av, 0, 0)); \
+          itemptr->id = SvIV(*av_fetch(item_av, 0, 0)); \
           Newx(itemptr->coords, ndim, double); \
           for (j = 0; j < ndim; ++j) \
             itemptr->coords[j] = SvNV(*av_fetch(item_av, j+1, 0)); \
@@ -172,7 +172,6 @@ DESTROY(self)
     n = self->nitems;
     item_ary = self->items;
     for (i = 0; i < n; ++i) {
-      SvREFCNT_dec(item_ary[i].payload);
       Safefree(item_ary[i].coords);
     }
     Safefree(self->items);
