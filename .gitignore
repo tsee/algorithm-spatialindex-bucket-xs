@@ -12,3 +12,6 @@ pod2htm?.tmp
 *~
 *.swp
 *.swo
+XS.bs
+*.o
+XS.c
