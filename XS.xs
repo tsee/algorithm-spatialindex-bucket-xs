@@ -104,3 +104,25 @@ DESTROY(self)
     Safefree(self);
     XSRETURN_EMPTY;
 
+void
+add_items(self, ...)
+    xs_bucket_t* self
+  PREINIT:
+    UV i;
+    AV* items_av;
+    SV* item;
+  PPCODE:
+    items_av = self->items;
+    for (i = 1; i < items; ++i) {
+      item = ST(i);
+      SvREFCNT_inc(item);
+      av_push(items_av, item); /* TODO no elements known, could preallocate */
+    }
+    XSRETURN_EMPTY;
+
+unsigned int
+nitems(self)
+    xs_bucket_t* self
+  CODE:
+    RETVAL = av_len(self->items)+1;
+  OUTPUT: RETVAL
