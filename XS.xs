@@ -16,7 +16,14 @@ typedef struct {
   UV ndims;
   UV nitems;
   xs_item_t* items;
+  char free_mode;
 } xs_bucket_t;
+
+
+/* settings in free_mode */
+#define ASIf_NORMAL_FREE 0
+#define ASIf_BLOCK_FREE 1
+#define ASIf_NO_FREE 2
 
 #define ASI_MAKE_ITEM_AV(item_av, itemptr, ndims) \
       item_av = newAV(); \
@@ -35,7 +42,75 @@ typedef struct {
             itemptr->coords[j] = SvNV(*av_fetch(item_av, j+1, 0)); \
         } STMT_END
 
+STATIC
+unsigned int
+ASI_bucket_mem_size(pTHX_ xs_bucket_t* self)
+{
+  return sizeof(xs_bucket_t) + self->nitems * (sizeof(xs_item_t) + self->ndims * sizeof(double));
+}
+
+/*
+ * Returns a copy of the object with all parts of the object allocated in
+ * one block of memory. If not 0, the provided target pointer is assumed
+ * to have the correct amount of pre-allocated memory.
+ * Sets the 'free_mode' flag on the new object to ASI_BLOCK_FREE
+ * if it had to allocate memory or to ASI_NO_FREE if the memory
+ * was preallocated.
+ */
+STATIC
+char*
+ASI_invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target)
+{
+  UV i, n, ndim, coordsize;
+  char *str, *ptr;
+  xs_item_t* items;
+  UV mem = ASI_bucket_mem_size(aTHX_ self);
+  n = self->nitems;
+  if (target == 0) {
+    Newx(str, mem, char);
+  }
+  else {
+    str = target;
+  }
+
+  Copy(self, str, 1, xs_bucket_t);
+  if (target == 0)
+    ((xs_bucket_t*)str)->free_mode = ASIf_BLOCK_FREE;
+  else
+    ((xs_bucket_t*)str)->free_mode = ASIf_NO_FREE;
+
+  if (n == 0) {
+    return str;
+  }
+
+  items = self->items;
+  ndim = self->ndims;
+
+  ptr = str+sizeof(xs_bucket_t);
+  ((xs_bucket_t*)ptr)->items = (xs_item_t*)ptr;
+  coordsize = ndim*sizeof(double);
+  for (i = 0; i < n; ++i) {
+    Copy(&items[i], ptr, 1, xs_item_t);
+    ((xs_item_t*)ptr)->coords = (double*)(ptr+sizeof(xs_item_t));
+    ptr += sizeof(xs_item_t);
+    Copy(items[i].coords, ptr, ndim, double);
+    ptr += coordsize;
+  }
+
+  return str;
+}
+
 MODULE = Algorithm::SpatialIndex::Bucket::XS PACKAGE = Algorithm::SpatialIndex::Bucket::XS
+
+xs_bucket_t*
+invariant_clone(self)
+    xs_bucket_t* self
+  PREINIT:
+    const char* CLASS = "Algorithm::SpatialIndex::Bucket::XS";
+  CODE:
+    /* this is all for testing only */
+    RETVAL = (xs_bucket_t*)ASI_invariant_bucket_clone(aTHX_ self, 0);
+  OUTPUT: RETVAL
 
 xs_bucket_t*
 _new_bucket(CLASS, node_id, items_av)
@@ -51,6 +126,7 @@ _new_bucket(CLASS, node_id, items_av)
   CODE:
     Newx(RETVAL, 1, xs_bucket_t);
     RETVAL->node_id = node_id;
+    RETVAL->free_mode = ASIf_NORMAL_FREE;
 
     nitems = av_len(items_av)+1;
     RETVAL->nitems = nitems;
@@ -153,7 +229,7 @@ items_in_rect(self, ...)
         }
         if (!skip) {
           ASI_MAKE_ITEM_AV(item_av, itemptr, ndim);
-          av_push(RETVAL, newRV_noinc(item_av));
+          av_push(RETVAL, newRV_noinc((SV*)item_av));
         }
       }
       /* Safefree(item_coords) */;
@@ -168,14 +244,18 @@ DESTROY(self)
     UV i, n, ndims;
     xs_item_t* item_ary;
   PPCODE:
-    ndims = self->ndims;
-    n = self->nitems;
-    item_ary = self->items;
-    for (i = 0; i < n; ++i) {
-      Safefree(item_ary[i].coords);
+    if (self->free_mode == ASIf_NORMAL_FREE) {
+      ndims = self->ndims;
+      n = self->nitems;
+      item_ary = self->items;
+      for (i = 0; i < n; ++i) {
+        Safefree(item_ary[i].coords);
+      }
+      Safefree(self->items);
     }
-    Safefree(self->items);
-    Safefree(self);
+    if (self->free_mode != ASIf_NO_FREE) {
+      Safefree(self);
+    }
     XSRETURN_EMPTY;
 
 void
@@ -187,6 +267,9 @@ add_items(self, ...)
     xs_item_t* items_ary;
     xs_item_t* item;
   PPCODE:
+    if (self->free_mode != ASIf_NORMAL_FREE) {
+      croak("Cannot add items to invariant bucket");
+    }
     if (items > 1) {
       nitems = self->nitems;
       nitems_new = nitems + items-1;
