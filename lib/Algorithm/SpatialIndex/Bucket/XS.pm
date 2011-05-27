@@ -19,7 +19,7 @@ sub isa {
 sub new {
   my $class = shift;
   my %opt = @_;
-  return $class->_new_bucket(@opt{qw(node_id items)});
+  return $class->_new_bucket($opt{node_id}, $opt{items}||[]);
 }
 
 1;
