@@ -4,7 +4,9 @@ use warnings;
 use Test::More;
 use Algorithm::SpatialIndex;
 use Algorithm::SpatialIndex::Strategy::QuadTree;
+use Time::HiRes qw(sleep time);
 
+my $start = time;
 my @limits = qw(12 -2 15 7);
 my $index = Algorithm::SpatialIndex->new(
   bucket_class => $ENV{PERL_ASI_BUCKET_CLASS}||'Algorithm::SpatialIndex::Bucket::XS',
@@ -34,12 +36,13 @@ foreach my $x (map {$_/$scale} $limits[0]*$scale..$limits[2]*$scale) {
 }
 
 diag("Inserted $item_id nodes");
+printf "Filling took %.3f\n", time()-$start;
 
-use Time::HiRes qw(sleep time);
 my $time = time;
-for my $i (1..500) {
+my $n = 500;
+for my $i (1..$n) {
   my @items = $index->get_items_in_rect(qw( 13 0 13.1 0.1 ));
   warn scalar(@items) if $i == 1;
 }
-printf "Took: %.3f\n", time()-$time;
+printf "Each get took: %.3f ms\n", (time()-$time)/$n*1000;
 
