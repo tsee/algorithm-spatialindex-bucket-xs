@@ -52,6 +52,12 @@ SCOPE: {
   is_deeply(
     $b->items, [[8,7,6], @$it], 'items'
   );
+  my $eit = [[1000, -12.3, -9999], [90, 1, 1], [0,0,0]];
+  $b->add_items(@$eit);
+  is($b->nitems, 6, "nitems, reinit bucket");
+  is_deeply(
+    $b->items, [[8,7,6], @$it, @$eit], 'items'
+  );
 }
 pass("DESTROY late-init bucket");
 
