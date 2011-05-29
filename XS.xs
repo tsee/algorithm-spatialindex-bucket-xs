@@ -8,14 +8,16 @@
 
 typedef struct {
   IV id;
-  ssize_t coords_offset;
+  ssize_t coords_offset; /* really a double*, but see
+                          * ASI_GET_COORDS/ASI_SET_COORDS macros */
 } xs_item_t;
 
 typedef struct {
   UV node_id;
   UV ndims;
   UV nitems;
-  ssize_t items_offset;
+  ssize_t items_offset; /* really an xs_item_t*, but see
+                         * ASI_GET_ITEMS/ASI_SET_ITEMS macros */
   char free_mode;
 } xs_bucket_t;
 
