@@ -7,19 +7,24 @@ use Algorithm::SpatialIndex::Strategy::QuadTree;
 sub run {
   my $class = shift;
   my $storage = shift;
-  
   my @limits = qw(12 -2 15 7);
-  my $index = Algorithm::SpatialIndex->new(
-    bucket_class => $ENV{PERL_ASI_BUCKET_CLASS}||'Algorithm::SpatialIndex::Bucket::XS',
-    strategy => 'QuadTree',
-    storage  => $storage,
-    limit_x_low => $limits[0],
-    limit_y_low => $limits[1],
-    limit_x_up  => $limits[2],
-    limit_y_up  => $limits[3],
-    bucket_size => 5,
-    @_,
-  );
+  my $index;
+  if (@_ and ref($_[0]) and $_[0]->isa('Algorithm::SpatialIndex')) {
+    $index = shift;
+  }
+  else {
+    $index = Algorithm::SpatialIndex->new(
+      bucket_class => $ENV{PERL_ASI_BUCKET_CLASS}||'Algorithm::SpatialIndex::Bucket::XS',
+      strategy => 'QuadTree',
+      storage  => $storage,
+      limit_x_low => $limits[0],
+      limit_y_low => $limits[1],
+      limit_x_up  => $limits[2],
+      limit_y_up  => $limits[3],
+      bucket_size => 5,
+      @_,
+    );
+  }
 
   isa_ok($index, 'Algorithm::SpatialIndex');
 
@@ -117,6 +122,8 @@ sub run {
     my @items = $index->get_items_in_rect(@$coords);
     is(scalar(@items), $item_id, 'Encompassing coords get all elems');
   }
+
+  return $index;
 } # end run
 
 1;
