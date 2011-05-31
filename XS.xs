@@ -1,5 +1,7 @@
-#define PERL_NO_GET_CONTEXT
+#include <stdio.h>
+#include <sys/mman.h>
 
+#define PERL_NO_GET_CONTEXT
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
@@ -28,6 +30,62 @@ invariant_clone(self)
     /* this is all for testing only */
     RETVAL = (xs_bucket_t*)invariant_bucket_clone(aTHX_ self, 0);
   OUTPUT: RETVAL
+
+void
+dump_as_string(self)
+    xs_bucket_t* self
+  PREINIT:
+    xs_bucket_t* buckclone;
+    STRLEN len;
+    SV* retval;
+    char* content;
+  PPCODE:
+    /* FIXME this is really inefficient... copying memory all over the place.
+     * The commented out version below doesn't seem to work. No idea why. */
+    len = bucket_mem_size(aTHX_ self);
+    Newx(content, len+1, char);
+    buckclone = invariant_bucket_clone(aTHX_ self, content);
+    retval = newSVpv(content, len+1);
+    Safefree(content);
+    XPUSHs(sv_2mortal(retval));
+    /*
+    retval = newSV(len);
+    SvPOK_on(retval);
+    content = SvPVX(retval);
+    buckclone = invariant_bucket_clone(aTHX_ self, content);
+    content[len] = '\0';
+    XPUSHs(sv_2mortal(retval));
+    */
+
+AV*
+_new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
+    char* CLASS;
+    char* file;
+    UV filelen;
+    UV nbuckets;
+  PREINIT:
+    FILE* mapfile;
+    int fd;
+    xs_bucket_t* bucks;
+    UV i;
+  CODE:
+    mapfile = fopen(file, "r");
+    if (mapfile == 0) {
+        croak("Failed to open file '%s' for reading: %i", file, errno);
+    }
+    fd = fileno(mapfile);
+    RETVAL = newAV();
+    sv_2mortal((SV*)RETVAL);
+    bucks = (xs_bucket_t*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
+    dump_bucket(bucks);   
+    av_fill(RETVAL, nbuckets-1);
+    for (i = 0; i < nbuckets; ++i) {
+      SV* thesv;
+      SV* elem;
+      thesv = newSV(0);
+      elem = sv_setref_pv(thesv, CLASS, (void*)(&bucks[i]));
+      av_store(RETVAL, i, elem);
+    }
 
 xs_bucket_t*
 _new_bucket(CLASS, node_id, items_av)
@@ -164,6 +222,8 @@ DESTROY(self)
     xs_item_t* item_ary;
     double *coords;
   PPCODE:
+    printf("ASIf_ free mode: %i\n", (int)self->free_mode);
+
     if (self->free_mode == ASIf_NORMAL_FREE) {
       ndims = self->ndims;
       n = self->nitems;
@@ -173,9 +233,13 @@ DESTROY(self)
         Safefree(coords);
       }
       Safefree(item_ary);
-    }
-    if (self->free_mode != ASIf_NO_FREE) {
       Safefree(self);
+    }
+    else if (self->free_mode != ASIf_NO_FREE) {
+      Safefree(self);
+    }
+    else {
+      printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode");
     }
     XSRETURN_EMPTY;
 
