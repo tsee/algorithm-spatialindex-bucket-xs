@@ -17,12 +17,12 @@ my $nbuckets = $index->storage->write_buckets_to_disk;
 warn "# Expect $nbuckets buckets\n";
 
 my $f = "tmpdir/buckets.mmap";
-my @bucks = Algorithm::SpatialIndex::Bucket::XS->_new_buckets_from_mmap_file(
+my $bucks = Algorithm::SpatialIndex::Bucket::XS->_new_buckets_from_mmap_file(
   $f,
   (-s $f),
   $nbuckets
 );
-warn scalar(@bucks);
-
-warn $bucks[0];
+use Data::Dumper;
+warn Dumper $bucks;
+warn scalar(@$bucks);
 

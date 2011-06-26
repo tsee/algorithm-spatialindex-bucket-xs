@@ -45,6 +45,7 @@ dump_as_string(self)
     len = bucket_mem_size(aTHX_ self);
     Newx(content, len+1, char);
     buckclone = invariant_bucket_clone(aTHX_ self, content);
+    printf("ASIf_ free mode DUMP: %i\n", (int)(buckclone->free_mode));
     retval = newSVpv(content, len+1);
     Safefree(content);
     XPUSHs(sv_2mortal(retval));
@@ -76,16 +77,28 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
     fd = fileno(mapfile);
     RETVAL = newAV();
     sv_2mortal((SV*)RETVAL);
+    /* The problem here is that the code assumes that a bucket
+     * (with all of its contents!) has constant size and simply
+     * casting the mmapped data to the proper type is going to
+     * work. It doesn't. It needs some form of index to figure out
+     * where each bucket starts.
+     * Not only that. While the buckets will be marked "no free"
+     * for the destructor, the mmapped memory will never be released.
+     * The proper solution is still unclear. Possibly this needs
+     * refcounting from each bucket to its underlying mmap.
+     */
     bucks = (xs_bucket_t*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
-    dump_bucket(bucks);   
     av_fill(RETVAL, nbuckets-1);
     for (i = 0; i < nbuckets; ++i) {
+      dump_bucket(&bucks[i]);
       SV* thesv;
       SV* elem;
       thesv = newSV(0);
       elem = sv_setref_pv(thesv, CLASS, (void*)(&bucks[i]));
       av_store(RETVAL, i, elem);
     }
+  OUTPUT: RETVAL
+
 
 xs_bucket_t*
 _new_bucket(CLASS, node_id, items_av)
@@ -222,7 +235,7 @@ DESTROY(self)
     xs_item_t* item_ary;
     double *coords;
   PPCODE:
-    printf("ASIf_ free mode: %i\n", (int)self->free_mode);
+    printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode));
 
     if (self->free_mode == ASIf_NORMAL_FREE) {
       ndims = self->ndims;
@@ -235,11 +248,15 @@ DESTROY(self)
       Safefree(item_ary);
       Safefree(self);
     }
-    else if (self->free_mode != ASIf_NO_FREE) {
+    else if (self->free_mode == ASIf_BLOCK_FREE) {
       Safefree(self);
     }
+    else if (self->free_mode != ASIf_NO_FREE) {
+      printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n");
+    }
     else {
-      printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode");
+      dump_bucket(self);
+      croak("Woah, shouldn't happen: bucket free mode is '%i'", self->free_mode);
     }
     XSRETURN_EMPTY;
 

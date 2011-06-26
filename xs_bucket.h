@@ -103,7 +103,7 @@ dump_bucket(xs_bucket_t* self)
   xs_item_t* items_ptr;
   n = self->nitems;
   items_ptr = ASI_GET_ITEMS(self);
-  printf("- ndims: %u\n  nitems: %u  node_id: %u\n", (unsigned int)self->ndims, (unsigned int)n, (unsigned int)self->node_id);
+  printf("- ndims: %u\n  nitems: %u  node_id: %u free_mode: %i\n", (unsigned int)self->ndims, (unsigned int)n, (unsigned int)self->node_id, (int)self->free_mode);
   for (i = 0; i < n; ++i) {
     dump_item(self, &items_ptr[i]);
   }
