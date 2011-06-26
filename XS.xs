@@ -72,7 +72,7 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
   CODE:
     mapfile = fopen(file, "r");
     if (mapfile == 0) {
-        croak("Failed to open file '%s' for reading: %i", file, errno);
+      croak("Failed to open file '%s' for reading: %i", file, errno);
     }
     fd = fileno(mapfile);
     RETVAL = newAV();
@@ -108,7 +108,7 @@ _new_bucket(CLASS, node_id, items_av)
   PREINIT:
     UV nitems;
     xs_item_t* items_ary;
-    UV i, j, ndim;
+    UV i, ndim;
     AV* item_av;
     xs_item_t* item;
   CODE:
@@ -151,7 +151,7 @@ AV*
 items(self)
     xs_bucket_t* self
   PREINIT:
-    UV i, j, n, ndim;
+    UV i, n, ndim;
     xs_item_t *items_ary, *itemptr;
     AV* item_av;
   CODE:
@@ -265,7 +265,7 @@ add_items(self, ...)
     xs_bucket_t* self
   PREINIT:
     AV *item_av;
-    UV i, j, nitems, nitems_new, ndim;
+    UV i, nitems, nitems_new, ndim;
     xs_item_t* items_ary;
     xs_item_t* item;
   PPCODE:
