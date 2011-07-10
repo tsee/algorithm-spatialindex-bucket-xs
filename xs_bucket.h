@@ -77,10 +77,10 @@ typedef struct {
           double* coords;                                                 \
           UV j;                                                           \
           (item_av) = newAV();                                            \
-          av_fill((item_av), (ndims)); /* 1 (for payload) + ndims-1*/       \
+          av_fill((item_av), (ndims)); /* 1 (for payload) + ndims-1*/     \
           av_store((item_av), 0, newSViv(itemptr->id));                   \
           coords = ASI_GET_COORDS(itemptr);                               \
-          for (j = 0; j < (UV)(ndims); ++j) {                                   \
+          for (j = 0; j < (UV)(ndims); ++j) {                             \
             av_store((item_av), j+1, newSVnv(coords[j]));                 \
           }                                                               \
         } STMT_END
