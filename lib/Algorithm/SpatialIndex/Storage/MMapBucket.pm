@@ -30,7 +30,6 @@ sub init {
   if (not defined $opt->{path}) {
     croak("Algorithm::SpatialIndex::Storage::MMapBucket requires a path parameter");
   }
-
   if ($opt->{load_mmap}) {
     # FIXME do this properly
     my $dir = $opt->{path};
@@ -38,7 +37,7 @@ sub init {
     # Load the nodes from JSON
     my $nodes_file = sprintf(NODES_FILE(), $dir);
     my $unblessed_nodes_ary = JSON::XS::decode_json(do {local $/; open my $fh, "<", $nodes_file or die $!; <$fh>});
-    my $main_nodes_ary = $self->{nodes};
+    my $main_nodes_ary = $self->{nodes} = [];
     push @{$main_nodes_ary}, bless($_ => 'Algorithm::SpatialIndex::Node') for @$unblessed_nodes_ary;
 
     # Load the buckets via mmap
@@ -55,7 +54,7 @@ sub init {
     );
 
     # FIXME this is inelegant as hell
-    my $b_storage = $self->{buckets};
+    my $b_storage = $self->{buckets} = [];
     foreach my $bucket (@$bucks) {
       $b_storage->[$bucket->node_id] = $bucket;
     }
