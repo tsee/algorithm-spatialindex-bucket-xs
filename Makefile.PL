@@ -13,4 +13,7 @@ WriteMakefile(
       (ABSTRACT_FROM  => 'lib/Algorithm/SpatialIndex/Bucket/XS.pm', # retrieve abstract from module
        AUTHOR         => 'Steffen Mueller <smueller@cpan.org>') : ()),
     DEFINE            => ($debug ? '-Wall -Wextra -O0' : ''), # e.g., '-DHAVE_SOMETHING'
+    INC               => '-I.',
+    OBJECT            => '$(O_FILES)', # link all the C files too
 );
+
