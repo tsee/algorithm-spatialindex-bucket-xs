@@ -5,7 +5,7 @@
  * This means storing the relative position of the (pointer) member
  * instead of the pointer itself. This macro does the simple arithmetic
  * to return the absolute pointer position and does the proper cast. */
-#define GET_OFFSET_MEMBER(pptr, membername, type) \
+#define GET_OFFSET_MEMBER(pptr, membername, type)          \
         ( (type*)( (ssize_t)(pptr) + (pptr)->membername) )
 
 /* Set a struct member that's implemented with offset logic */
