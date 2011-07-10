@@ -3,6 +3,12 @@ package Algorithm::SpatialIndex::Storage::MMapBucket;
 use strict;
 use warnings;
 
+# WARNING WARNING WARNING
+# This whole implementation is a disgrace and needs proper
+# reimplementation. :)
+# WARNING WARNING WARNING
+
+
 use Carp qw(croak);
 
 use parent 'Algorithm::SpatialIndex::Storage::Memory';
