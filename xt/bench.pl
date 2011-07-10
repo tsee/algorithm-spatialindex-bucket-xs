@@ -36,7 +36,7 @@ foreach my $x (map {$_/$scale} $limits[0]*$scale..$limits[2]*$scale) {
   }
 }
 
-diag("Inserted $item_id nodes");
+diag("Inserted $item_id items");
 printf "Filling took %.3f\n", time()-$start;
 
 my $time = time;
