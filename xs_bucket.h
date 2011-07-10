@@ -1,6 +1,8 @@
 #ifndef xs_bucket_h_
 #define xs_bucket_h_
 
+#include "offset_members.h"
+
 /* struct representing a single item in a bucket */
 typedef struct {
   IV id;
@@ -32,29 +34,15 @@ typedef struct {
                         * not free memory. */
 
 
-/* Access a struct member that's implemented with offset logic.
- * This means storing the relative position of the (pointer) member
- * instead of the pointer itself. This macro does the simple arithmetic
- * to return the absolute pointer position and does the proper cast. */
-#define ASI_GET_OFFSET_MEMBER(pptr, membername, type) \
-        ( (type*)( (ssize_t)(pptr) + (pptr)->membername) )
-
-/* Set a struct member that's implemented with offset logic */
-#define ASI_SET_OFFSET_MEMBER(pptr, membername, dataptr)                             \
-        STMT_START {                                                                 \
-          ( (pptr)->membername = (ssize_t) ((ssize_t)(dataptr) - (ssize_t)(pptr)) ); \
-        } STMT_END
-
-
 /* Access the items array in a bucket (passed as a xs_bucket_t*) */
-#define ASI_GET_ITEMS(pptr) ASI_GET_OFFSET_MEMBER(pptr, items_offset, xs_item_t)
+#define ASI_GET_ITEMS(pptr) GET_OFFSET_MEMBER(pptr, items_offset, xs_item_t)
 /* Set the items array (passed as a pointer) in a bucket (passed as a xs_bucket_t*) */
-#define ASI_SET_ITEMS(pptr, itemsptr) ASI_SET_OFFSET_MEMBER(pptr, items_offset, itemsptr)
+#define ASI_SET_ITEMS(pptr, itemsptr) SET_OFFSET_MEMBER(pptr, items_offset, itemsptr)
 
 /* Access the coordinates array (double*) in a bucket item (passed as a xs_item_t*) */
-#define ASI_GET_COORDS(itemptr) ASI_GET_OFFSET_MEMBER(itemptr, coords_offset, double)
+#define ASI_GET_COORDS(itemptr) GET_OFFSET_MEMBER(itemptr, coords_offset, double)
 /* Set the coordinates array (double*) in a bucket item (passed as a xs_item_t*) */
-#define ASI_SET_COORDS(itemptr, coordsptr) ASI_SET_OFFSET_MEMBER(itemptr, coords_offset, coordsptr)
+#define ASI_SET_COORDS(itemptr, coordsptr) SET_OFFSET_MEMBER(itemptr, coords_offset, coordsptr)
 
 /* Reallocate the array of items in a bucket */
 #define ASI_RENEW_ITEMS(items_ary, nitems_old, nitems_new)                \
@@ -65,7 +53,7 @@ typedef struct {
           Renew(items_ary, nitems_new, xs_item_t);                        \
           move_offset = (ssize_t) ((ssize_t)items_ary - (ssize_t)oldpos); \
           for (i = 0; i < nitems_old; ++i) {                              \
-            /* FIXME breaks ASI_GET_OFFSET_MEMBER/etc encapsulation */    \
+            /* FIXME breaks GET_OFFSET_MEMBER/etc encapsulation */        \
             items_ary[i].coords_offset -= move_offset;                    \
           }                                                               \
         } STMT_END
