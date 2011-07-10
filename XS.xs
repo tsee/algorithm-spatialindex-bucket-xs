@@ -65,8 +65,6 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
     UV filelen;
     AV* buckets_pos;
   PREINIT:
-    FILE* mapfile;
-    int fd;
     size_t buck_pos;
     char* bucks_str;
     UV i, nbuckets;
@@ -74,6 +72,7 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
     SV** elem;
     AV* inner_av;
     SV *thesv, *thesv2;
+    mmap_tracker_t* mmap_tracker;
   CODE:
     /* The problem here is that the code assumes that a bucket
      * (with all of its contents!) has constant size and simply
@@ -104,15 +103,13 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
      */
     nbuckets = av_len(buckets_pos)+1;
 
-    mapfile = fopen(file, "r");
-    if (mapfile == 0) {
-      croak("Failed to open file '%s' for reading: %i", file, errno);
-    }
-    fd = fileno(mapfile);
     RETVAL = newAV();
     sv_2mortal((SV*)RETVAL);
     av_fill(RETVAL, nbuckets-1);
-    bucks_str = (char*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
+
+    mmap_tracker = make_tracked_mmap_file(aTHX_ (size_t)filelen, PROT_READ, MAP_SHARED, file, 0);
+    bucks_str = (char*)MMAP_GET_ADDRESS(mmap_tracker);
+
     for (i = 0; i < nbuckets; ++i) {
       elem = av_fetch(buckets_pos, i, 0);
       if (elem == 0 || !SvROK(*elem) || (SvTYPE(SvRV(*elem)) != SVt_PVAV))
@@ -127,7 +124,10 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
       }
       /*node_id = SvIV(*av_fetch(inner_av, 0, 0));*/
       buck_pos = SvUV(*av_fetch(inner_av, 1, 0));
+
       curbuck = (xs_bucket_t*) (bucks_str + buck_pos);
+      MMAP_INC_REFCOUNT(mmap_tracker);
+
       dump_bucket(curbuck);
       thesv = newSV(0);
       thesv2 = sv_setref_pv(thesv, CLASS, (void*)(curbuck));
