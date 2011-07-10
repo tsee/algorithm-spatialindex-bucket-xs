@@ -88,6 +88,19 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
      *
      * Update: The refcounting facilities are now implemented and await
      * exploitation!
+     *
+     * Update2: There is a big hole in the scheme: The mmap_ref
+     * and free modes are part of the bucket struct, which is in mmap'd
+     * and read-only memory (currently, could be private COW, but that may
+     * result in always having all bucket data in memory due to paging!).
+     * This means that when casting the buckets, we can't just set their
+     * free mode and/or mmap_ref pointers to the right mmap_tracker_t
+     * struct. That was pretty stupid of me.
+     * The two workarounds I can see are:
+     * - Use private COW with the above gotcha.
+     * - Have a wrapping struct of some sort which is never mmapped and
+     *   contains only the mmap_tracker_t pointer and the free mode.
+     *   This is a big change and may slow things down considerably.
      */
     nbuckets = av_len(buckets_pos)+1;
 
