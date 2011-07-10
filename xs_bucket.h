@@ -2,6 +2,7 @@
 #define xs_bucket_h_
 
 #include "offset_members.h"
+#include "mmap_tracker.h"
 
 /* struct representing a single item in a bucket */
 typedef struct {
@@ -20,6 +21,15 @@ typedef struct {
   char free_mode; /* holds a flag indicating how to handle
                    * the bucket during destruction.
                    * See the ASIf_* defines below */
+
+  /* If not NULL, points to an mmap_tracker_t struct that
+   * defines the mmap that this bucket is part of.
+   * DESTROY as well as construction code needs to respect this
+   * to pass on refcount changes.
+   * This is (obviously?) never serialized/dumped/written to disk
+   * and thus doesn't need to be an offset member.
+   */
+  mmap_tracker_t* mmap_ref;
 } xs_bucket_t;
 
 
@@ -32,6 +42,9 @@ typedef struct {
                            * for dumping/memory mapping. */
 #define ASIf_NO_FREE 2 /* The bucket's memory is handled by something else. DESTROY does
                         * not free memory. */
+#define ASIf_MMAP_FREE 3 /* The bucket's memory is handled by the mmap tracker.
+                          * DESTROY does not free memory but hands responsibility to
+                          * the refcounting mmap tracker. */
 
 
 /* Access the items array in a bucket (passed as a xs_bucket_t*) */
@@ -153,8 +166,14 @@ invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target, bool mmapped)
     str = target;
 
   Copy(self, str, 1, xs_bucket_t);
+
+  ((xs_bucket_t*)str)->mmap_ref = 0; /* We do not know of an mmap tracker,
+                                      * so do not clone that of the original. */
+
   if (target == 0)
     ((xs_bucket_t*)str)->free_mode = ASIf_BLOCK_FREE;
+  else if (mmapped)
+    ((xs_bucket_t*)str)->free_mode = ASIf_MMAP_FREE;
   else
     ((xs_bucket_t*)str)->free_mode = ASIf_NO_FREE;
 

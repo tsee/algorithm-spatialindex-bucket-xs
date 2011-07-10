@@ -28,7 +28,7 @@ invariant_clone(self)
     const char* CLASS = "Algorithm::SpatialIndex::Bucket::XS";
   CODE:
     /* this is all for testing only */
-    RETVAL = (xs_bucket_t*)invariant_bucket_clone(aTHX_ self, 0);
+    RETVAL = (xs_bucket_t*)invariant_bucket_clone(aTHX_ self, 0, 0); /* bucket, target_addr, is_mmap */
   OUTPUT: RETVAL
 
 void
@@ -44,7 +44,7 @@ dump_as_string(self)
      * The commented out version below doesn't seem to work. No idea why. */
     len = bucket_mem_size(aTHX_ self);
     Newx(content, len+1, char);
-    buckclone = invariant_bucket_clone(aTHX_ self, content);
+    buckclone = invariant_bucket_clone(aTHX_ self, content, 0); /* no need for the bucket to free anything */
     printf("ASIf_ free mode DUMP: %i\n", (int)(buckclone->free_mode));
     retval = newSVpv(content, len+1);
     Safefree(content);
@@ -53,7 +53,7 @@ dump_as_string(self)
     retval = newSV(len);
     SvPOK_on(retval);
     content = SvPVX(retval);
-    buckclone = invariant_bucket_clone(aTHX_ self, content);
+    buckclone = invariant_bucket_clone(aTHX_ self, content, 0);
     content[len] = '\0';
     XPUSHs(sv_2mortal(retval));
     */
@@ -113,6 +113,7 @@ _new_bucket(CLASS, node_id, items_av)
     xs_item_t* item;
   CODE:
     Newx(RETVAL, 1, xs_bucket_t);
+    RETVAL->mmap_ref = 0; /* Not in an mmap */
     RETVAL->node_id = node_id;
     RETVAL->free_mode = ASIf_NORMAL_FREE;
 
