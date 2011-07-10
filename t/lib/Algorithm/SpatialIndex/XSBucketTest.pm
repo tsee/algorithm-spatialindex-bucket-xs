@@ -10,6 +10,7 @@ sub run {
   my @limits = qw(12 -2 15 7);
   my $index;
   if (@_ and ref($_[0]) and $_[0]->isa('Algorithm::SpatialIndex')) {
+    diag("Testing with existing index");
     $index = shift;
   }
   else {
