@@ -25,15 +25,26 @@ sub init {
     }
 
     if ($opt->{load_mmap}) {
+        # TODO this is all nice and well for buckets. Or so I assume, but I can't know
+        # because this was never tested -- I can only dump (XS) buckets to disk at this point,
+        # not the rest of the tree, particularly not the nodes. Asks for A::SI::Node::XS. *sigh*
         my $dir = $opt->{path};
+        my $b_file = sprintf(BUCKETS_FILE(), $dir);
+        my $b_index_file = sprintf(BUCKETS_INDEX_FILE(), $dir);
+        croak("Can't locate buckets index file '$b_index_file'") if not -f $b_index_file;
+        croak("Can't locate buckets dump file '$b_file'") if not -f $b_file;
+        my $index = JSON::XS::decode_json(do {local $/; open my $fh, "<", $b_index_file or die $!; <$fh>});
 
-        for my $tuple (
-            [BUCKETS_FILE, \$self->{buckets}],
-        ) {
-            #my ($filetemplate, $ref) = @$tuple;
-            #my $file = sprintf $filetemplate, $dir;
-            #map_file(my $map, $file, '<') or die "Could not map $file";
-            #$$ref = \$map;
+        my $bucks = Algorithm::SpatialIndex::Bucket::XS->_new_buckets_from_mmap_file(
+            $b_file,
+            (-s $b_file),
+            $index
+        );
+
+        # FIXME this is inelegant as hell
+        my $b_storage = $self->{buckets};
+        foreach my $bucket (@$bucks) {
+            $b_storage->[$bucket->node_id] = $bucket;
         }
     }
 }
