@@ -29,6 +29,8 @@ my $index2 = Algorithm::SpatialIndex->new(
   load_mmap => 1,
 );
 
+# WARNING
+# This makes the bench below work -- that means the whole mmapping has been broken and I am a muppet. Doh.
 Algorithm::SpatialIndex::XSBucketTest->run('MMapBucket', $index2);
 
 test_fetches($index, 'Original index');
