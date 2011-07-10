@@ -47,11 +47,12 @@ mmap_tracker_t* make_tracked_mmap_file(pTHX_ size_t length, int prot, int flags,
  * mmunmapped and the tracker may be freed. */
 #define MMAP_DEC_REFCOUNT(mmap_tracker)                                           \
     STMT_START {                                                                  \
-      if (--((mmap_tracker)->refcount) == 0) {                                    \
-        if (-1 == munmap((mmap_tracker)->mmap_address, (mmap_tracker)->length)) { \
+      mmap_tracker_t* mm = (mmap_tracker);                                        \
+      if (--(mm->refcount) == 0) {                                                \
+        if (-1 == munmap(mm->mmap_address, mm->length)) {                         \
           croak("Failed to mmunmap address %p length %u",                         \
-                (void*)(mmap_tracker)->mmap_address,                              \
-                (mmap_tracker)->length);                                          \
+                (void*)mm->mmap_address,                                          \
+                mm->length);                                                      \
         }                                                                         \
         Safefree(mmap_tracker);                                                   \
       }                                                                           \

@@ -216,7 +216,8 @@ invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target, bool mmapped)
   return (xs_bucket_t*)str;
 }
 
-STATIC void
+STATIC
+void
 destroy_bucket(pTHX_ xs_bucket_t* self)
 {
   UV i, n, ndims;
@@ -225,7 +226,8 @@ destroy_bucket(pTHX_ xs_bucket_t* self)
 
   printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode));
 
-  if (self->free_mode == ASIf_NORMAL_FREE) {
+  switch (self->free_mode) {
+  case ASIf_NORMAL_FREE:
     ndims = self->ndims;
     n = self->nitems;
     item_ary = ASI_GET_ITEMS(self);
@@ -235,17 +237,23 @@ destroy_bucket(pTHX_ xs_bucket_t* self)
     }
     Safefree(item_ary);
     Safefree(self);
-  }
-  else if (self->free_mode == ASIf_BLOCK_FREE) {
+    break;
+  case ASIf_BLOCK_FREE:
     Safefree(self);
-  }
-  else if (self->free_mode != ASIf_NO_FREE) {
+    break;
+  case ASIf_MMAP_FREE:
+    if (self->mmap_ref == 0)
+      croak("Woah, shouldn't happen: bucket free mode is ASIf_MMAP_FREE, but there is no mmap_ref member pointer!");
+    MMAP_DEC_REFCOUNT(self->mmap_ref);
+    break;
+  case ASIf_NO_FREE:
     printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n");
-  }
-  else {
+    break;
+  default:
     dump_bucket(self);
     croak("Woah, shouldn't happen: bucket free mode is '%i'", self->free_mode);
-  }
+    break;
+  };
 }
 
 
