@@ -224,7 +224,7 @@ destroy_bucket(pTHX_ xs_bucket_t* self)
   xs_item_t* item_ary;
   double *coords;
 
-  printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode));
+  /* printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode)); */
 
   switch (self->free_mode) {
   case ASIf_NORMAL_FREE:
@@ -247,7 +247,7 @@ destroy_bucket(pTHX_ xs_bucket_t* self)
     MMAP_DEC_REFCOUNT(self->mmap_ref);
     break;
   case ASIf_NO_FREE:
-    printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n");
+    /* printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n"); */
     break;
   default:
     dump_bucket(self);

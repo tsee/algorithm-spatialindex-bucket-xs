@@ -26,6 +26,7 @@ my $bucks = Algorithm::SpatialIndex::Bucket::XS->_new_buckets_from_mmap_file(
   #$buck_idx
   $buck_index
 );
+#$_->debug_dump for @$bucks;
 #use Data::Dumper;
 #warn Dumper $bucks;
 #warn scalar(@$bucks);

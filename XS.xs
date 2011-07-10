@@ -45,7 +45,7 @@ dump_as_string(self)
     len = bucket_mem_size(aTHX_ self);
     Newx(content, len+1, char);
     buckclone = invariant_bucket_clone(aTHX_ self, content, 0); /* no need for the bucket to free anything */
-    printf("ASIf_ free mode DUMP: %i\n", (int)(buckclone->free_mode));
+    /* printf("ASIf_ free mode DUMP: %i\n", (int)(buckclone->free_mode)); */
     retval = newSVpv(content, len+1);
     Safefree(content);
     XPUSHs(sv_2mortal(retval));
@@ -131,7 +131,7 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
       curbuck->mmap_ref = mmap_tracker;
       curbuck->free_mode = ASIf_MMAP_FREE;
 
-      dump_bucket(curbuck);
+      /* dump_bucket(curbuck); */
       thesv = newSV(0);
       thesv2 = sv_setref_pv(thesv, CLASS, (void*)(curbuck));
       av_store(RETVAL, i, thesv2);
