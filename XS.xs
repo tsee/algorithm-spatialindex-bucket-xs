@@ -82,10 +82,14 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
      * casting the mmapped data to the proper type is going to
      * work. It doesn't. It needs some form of index to figure out
      * where each bucket starts.
+     *
      * Not only that. While the buckets will be marked "no free"
      * for the destructor, the mmapped memory will never be released.
      * The proper solution is still unclear. Possibly this needs
      * refcounting from each bucket to its underlying mmap.
+     *
+     * Update: The refcounting facilities are now implemented and await
+     * exploitation!
      */
     bucks = (xs_bucket_t*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
     av_fill(RETVAL, nbuckets-1);
@@ -231,34 +235,8 @@ items_in_rect(self, ...)
 void
 DESTROY(self)
     xs_bucket_t* self
-  PREINIT:
-    UV i, n, ndims;
-    xs_item_t* item_ary;
-    double *coords;
   PPCODE:
-    printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode));
-
-    if (self->free_mode == ASIf_NORMAL_FREE) {
-      ndims = self->ndims;
-      n = self->nitems;
-      item_ary = ASI_GET_ITEMS(self);
-      for (i = 0; i < n; ++i) {
-        coords = ASI_GET_COORDS(&item_ary[i]);
-        Safefree(coords);
-      }
-      Safefree(item_ary);
-      Safefree(self);
-    }
-    else if (self->free_mode == ASIf_BLOCK_FREE) {
-      Safefree(self);
-    }
-    else if (self->free_mode != ASIf_NO_FREE) {
-      printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n");
-    }
-    else {
-      dump_bucket(self);
-      croak("Woah, shouldn't happen: bucket free mode is '%i'", self->free_mode);
-    }
+    destroy_bucket(aTHX_ self);
     XSRETURN_EMPTY;
 
 void

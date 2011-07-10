@@ -216,5 +216,37 @@ invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target, bool mmapped)
   return (xs_bucket_t*)str;
 }
 
+STATIC void
+destroy_bucket(pTHX_ xs_bucket_t* self)
+{
+  UV i, n, ndims;
+  xs_item_t* item_ary;
+  double *coords;
+
+  printf("ASIf_ free mode in DESTROY: %i\n", (int)(self->free_mode));
+
+  if (self->free_mode == ASIf_NORMAL_FREE) {
+    ndims = self->ndims;
+    n = self->nitems;
+    item_ary = ASI_GET_ITEMS(self);
+    for (i = 0; i < n; ++i) {
+      coords = ASI_GET_COORDS(&item_ary[i]);
+      Safefree(coords);
+    }
+    Safefree(item_ary);
+    Safefree(self);
+  }
+  else if (self->free_mode == ASIf_BLOCK_FREE) {
+    Safefree(self);
+  }
+  else if (self->free_mode != ASIf_NO_FREE) {
+    printf("Not freeing bucket at all - it is in ASIf_NO_FREE mode\n");
+  }
+  else {
+    dump_bucket(self);
+    croak("Woah, shouldn't happen: bucket free mode is '%i'", self->free_mode);
+  }
+}
+
 
 #endif
