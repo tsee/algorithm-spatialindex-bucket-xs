@@ -3,6 +3,7 @@
 
 #include "offset_members.h"
 #include "mmap_tracker.h"
+#include "asi_flags.h"
 
 /* struct representing a single item in a bucket */
 typedef struct {
@@ -31,20 +32,6 @@ typedef struct {
    */
   mmap_tracker_t* mmap_ref;
 } xs_bucket_t;
-
-
-/* settings in free_mode */
-#define ASIf_NORMAL_FREE 0 /* Normal free: Free the coordinates in all items, then the
-                            * array of items, then the bucket */
-#define ASIf_BLOCK_FREE 1 /* Block free: All space for the bucket and its items can
-                           * be released with one Safefree call on the bucket address.
-                           * This is set when an invariant clone of a bucket is created
-                           * for dumping/memory mapping. */
-#define ASIf_NO_FREE 2 /* The bucket's memory is handled by something else. DESTROY does
-                        * not free memory. */
-#define ASIf_MMAP_FREE 3 /* The bucket's memory is handled by the mmap tracker.
-                          * DESTROY does not free memory but hands responsibility to
-                          * the refcounting mmap tracker. */
 
 
 /* Access the items array in a bucket (passed as a xs_bucket_t*) */
