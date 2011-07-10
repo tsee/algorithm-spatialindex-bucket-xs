@@ -107,7 +107,8 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
     sv_2mortal((SV*)RETVAL);
     av_fill(RETVAL, nbuckets-1);
 
-    mmap_tracker = make_tracked_mmap_file(aTHX_ (size_t)filelen, PROT_READ, MAP_SHARED, file, 0);
+    mmap_tracker = make_tracked_mmap_file(aTHX_ (size_t)filelen, PROT_READ|PROT_WRITE, MAP_PRIVATE, file, 0);
+    /* mmap_tracker = make_tracked_mmap_file(aTHX_ (size_t)filelen, PROT_READ, MAP_SHARED, file, 0); */
     bucks_str = (char*)MMAP_GET_ADDRESS(mmap_tracker);
 
     for (i = 0; i < nbuckets; ++i) {
@@ -127,6 +128,8 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
 
       curbuck = (xs_bucket_t*) (bucks_str + buck_pos);
       MMAP_INC_REFCOUNT(mmap_tracker);
+      curbuck->mmap_ref = mmap_tracker;
+      curbuck->free_mode = ASIf_MMAP_FREE;
 
       dump_bucket(curbuck);
       thesv = newSV(0);
