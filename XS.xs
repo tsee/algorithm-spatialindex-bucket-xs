@@ -59,24 +59,22 @@ dump_as_string(self)
     */
 
 AV*
-_new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
+_new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
     char* CLASS;
     char* file;
     UV filelen;
-    UV nbuckets;
+    AV* buckets_pos;
   PREINIT:
     FILE* mapfile;
     int fd;
-    xs_bucket_t* bucks;
-    UV i;
+    size_t buck_pos;
+    char* bucks_str;
+    UV i, nbuckets;
+    xs_bucket_t* curbuck;
+    SV** elem;
+    AV* inner_av;
+    SV *thesv, *thesv2;
   CODE:
-    mapfile = fopen(file, "r");
-    if (mapfile == 0) {
-      croak("Failed to open file '%s' for reading: %i", file, errno);
-    }
-    fd = fileno(mapfile);
-    RETVAL = newAV();
-    sv_2mortal((SV*)RETVAL);
     /* The problem here is that the code assumes that a bucket
      * (with all of its contents!) has constant size and simply
      * casting the mmapped data to the proper type is going to
@@ -91,15 +89,36 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, nbuckets)
      * Update: The refcounting facilities are now implemented and await
      * exploitation!
      */
-    bucks = (xs_bucket_t*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
+    nbuckets = av_len(buckets_pos)+1;
+
+    mapfile = fopen(file, "r");
+    if (mapfile == 0) {
+      croak("Failed to open file '%s' for reading: %i", file, errno);
+    }
+    fd = fileno(mapfile);
+    RETVAL = newAV();
+    sv_2mortal((SV*)RETVAL);
     av_fill(RETVAL, nbuckets-1);
+    bucks_str = (char*) mmap(0, (size_t)filelen, PROT_READ, MAP_SHARED, fd, 0);
     for (i = 0; i < nbuckets; ++i) {
-      dump_bucket(&bucks[i]);
-      SV* thesv;
-      SV* elem;
+      elem = av_fetch(buckets_pos, i, 0);
+      if (elem == 0 || !SvROK(*elem) || (SvTYPE(SvRV(*elem)) != SVt_PVAV))
+      {
+        croak("Error reading buckets from mmap file: Bucket position index array elem %u is not an array reference", i);
+      }
+
+      inner_av = (AV*)SvRV(*elem);
+      if (av_len(inner_av) < 1)
+      {
+        croak("Error reading buckets from mmap file: Need at least two elements sub-array of bucket position index (bucket %u)", i);
+      }
+      /*node_id = SvIV(*av_fetch(inner_av, 0, 0));*/
+      buck_pos = SvUV(*av_fetch(inner_av, 1, 0));
+      curbuck = (xs_bucket_t*) (bucks_str + buck_pos);
+      dump_bucket(curbuck);
       thesv = newSV(0);
-      elem = sv_setref_pv(thesv, CLASS, (void*)(&bucks[i]));
-      av_store(RETVAL, i, elem);
+      thesv2 = sv_setref_pv(thesv, CLASS, (void*)(curbuck));
+      av_store(RETVAL, i, thesv2);
     }
   OUTPUT: RETVAL
 

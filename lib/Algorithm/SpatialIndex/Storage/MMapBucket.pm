@@ -46,12 +46,13 @@ sub write_buckets_to_disk {
         or die "Failed to open buckets file for writing: $!";
     binmode $buckets_fh;
 
-    my $buckets_index = {};
+    my $buckets_index = [];
 
     for my $node (@{ $self->{nodes} }) {
         my $bucket = $self->{buckets}->[$node->id];
         if (defined($bucket)) {
-            $buckets_index->{$node->id} = tell($buckets_fh);
+            # HACK!
+            push @$buckets_index, [$node->id, tell($buckets_fh)];
             my $d = $bucket->dump_as_string();
             print $buckets_fh $d;
         }
@@ -60,8 +61,9 @@ sub write_buckets_to_disk {
     open my $bidx_fh, '>', sprintf(BUCKETS_INDEX_FILE, $dir)
         or die "Failed to open buckets index file for writing: $!";
     print $bidx_fh JSON::XS::encode_json($buckets_index);
+    close $bidx_fh;
 
-    return scalar keys %$buckets_index;
+    return $buckets_index;
 }
 
 
