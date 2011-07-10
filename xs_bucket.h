@@ -137,8 +137,8 @@ bucket_mem_size(pTHX_ xs_bucket_t* self)
  * was preallocated.
  */
 STATIC
-char*
-invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target)
+xs_bucket_t*
+invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target, bool mmapped)
 {
   UV i, nitems, ndim, total_items_size;
   char *str, *ptr, *tmp;
@@ -158,9 +158,8 @@ invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target)
   else
     ((xs_bucket_t*)str)->free_mode = ASIf_NO_FREE;
 
-  if (nitems == 0) {
-    return str;
-  }
+  if (nitems == 0)
+    return (xs_bucket_t*)str;
 
   items_ary = ASI_GET_ITEMS(self);
   ndim = self->ndims;
@@ -195,7 +194,7 @@ invariant_bucket_clone(pTHX_ xs_bucket_t* self, char* target)
     ptr += sizeof(xs_item_t);
   }
 
-  return str;
+  return (xs_bucket_t*)str;
 }
 
 
