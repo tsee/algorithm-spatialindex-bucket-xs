@@ -100,6 +100,10 @@ _new_buckets_from_mmap_file(CLASS, file, filelen, buckets_pos)
      * - Have a wrapping struct of some sort which is never mmapped and
      *   contains only the mmap_tracker_t pointer and the free mode.
      *   This is a big change and may slow things down considerably.
+     *
+     * Update3: For the time being, I've opted for using COW since the other
+     * approach is too much hassle. I should probably come up with an overall
+     * better solution!
      */
     nbuckets = av_len(buckets_pos)+1;
 
