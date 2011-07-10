@@ -54,7 +54,7 @@ mmap_tracker_t* make_tracked_mmap_file(pTHX_ size_t length, int prot, int flags,
                 (void*)mm->mmap_address,                                          \
                 mm->length);                                                      \
         }                                                                         \
-        Safefree(mmap_tracker);                                                   \
+        Safefree(mm);                                                             \
       }                                                                           \
     } STMT_END
 
