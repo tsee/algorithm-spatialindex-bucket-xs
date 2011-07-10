@@ -53,8 +53,7 @@ sub write_buckets_to_disk {
         if (defined($bucket)) {
             # HACK!
             push @$buckets_index, [$node->id, tell($buckets_fh)];
-            my $d = $bucket->dump_as_string();
-            print $buckets_fh $d;
+            print $buckets_fh $bucket->dump_as_string();
         }
     }
 
